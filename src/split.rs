@@ -59,7 +59,11 @@ fn is_space_delimiter(delimiter: &str) -> bool {
     delimiter == " " || delimiter == "space"
 }
 
-fn split_by_matches<'a>(line: &'a str, matches: &[DelimiterSpan], max_split: Option<isize>) -> Vec<&'a str> {
+fn split_by_matches<'a>(
+    line: &'a str,
+    matches: &[DelimiterSpan],
+    max_split: Option<isize>,
+) -> Vec<&'a str> {
     let selected = select_matches(matches, max_split);
     let mut fields = Vec::with_capacity(selected.len() + 1);
     let mut current = 0;
@@ -73,7 +77,10 @@ fn split_by_matches<'a>(line: &'a str, matches: &[DelimiterSpan], max_split: Opt
     fields
 }
 
-fn select_matches<'a>(matches: &'a [DelimiterSpan], max_split: Option<isize>) -> &'a [DelimiterSpan] {
+fn select_matches<'a>(
+    matches: &'a [DelimiterSpan],
+    max_split: Option<isize>,
+) -> &'a [DelimiterSpan] {
     match max_split {
         None => matches,
         Some(limit) if limit >= 0 => {
@@ -167,7 +174,10 @@ struct DelimiterSpan {
 }
 
 fn longest_delimiter_match(input: &str, delimiters: &[String]) -> Option<DelimiterMatch> {
-    let whitespace_len = if delimiters.iter().any(|delimiter| is_space_delimiter(delimiter)) {
+    let whitespace_len = if delimiters
+        .iter()
+        .any(|delimiter| is_space_delimiter(delimiter))
+    {
         leading_whitespace_len(input)
     } else {
         None
@@ -276,7 +286,10 @@ mod tests {
             text: None,
         };
 
-        assert_eq!(render_line("aa,bb.cc|dd", &runtime(config)), "aa, bb, cc, dd");
+        assert_eq!(
+            render_line("aa,bb.cc|dd", &runtime(config)),
+            "aa, bb, cc, dd"
+        );
     }
 
     #[test]
@@ -310,7 +323,10 @@ mod tests {
             text: None,
         };
 
-        assert_eq!(render_line("aa######bb##cc", &runtime(config)), "aa, bb, cc");
+        assert_eq!(
+            render_line("aa######bb##cc", &runtime(config)),
+            "aa, bb, cc"
+        );
     }
 
     #[test]
@@ -378,7 +394,10 @@ mod tests {
             text: None,
         };
 
-        assert_eq!(render_line("a==b===c====d", &runtime(config)), "a, b, c====d");
+        assert_eq!(
+            render_line("a==b===c====d", &runtime(config)),
+            "a, b, c====d"
+        );
     }
 
     #[test]

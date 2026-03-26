@@ -117,7 +117,7 @@ pub(crate) fn missing_delimiter_error() -> AppError {
         Diagnostic::new("missing required option: -d/--delimiter")
             .detail("cutcut needs at least one delimiter or delimiter regex.")
             .suggestion("Add -d STRING for fixed-string mode")
-            .suggestion("Add --regex -d REGEX for regex mode")
+            .suggestion("Add -x/--regex -d REGEX for regex mode")
             .example("cutcut -d '/' aa/bb/cc")
             .example("cutcut --regex -d '#+' 'aa###bb'"),
     )

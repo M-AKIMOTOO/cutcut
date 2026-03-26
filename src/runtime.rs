@@ -3,10 +3,9 @@ use std::fs::File;
 use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
 
 use crate::cli::Config;
-use crate::diagnostic::{
-    AppError, invalid_ignore_regex_error,
-};
-use crate::split::{build_delimiter_regex, select_field, split_fields};
+use crate::diagnostic::{AppError, invalid_ignore_regex_error};
+use crate::split::build_delimiter_regex;
+use crate::split::{select_field, split_fields};
 
 pub(crate) struct RuntimeConfig {
     pub(crate) config: Config,
@@ -63,7 +62,10 @@ pub(crate) fn build_runtime_config(config: Config) -> Result<RuntimeConfig, AppE
 }
 
 pub(crate) fn render_line(line: &str, runtime: &RuntimeConfig) -> String {
-    let fields: Vec<&str> = split_fields(line, runtime).into_iter().map(str::trim).collect();
+    let fields: Vec<&str> = split_fields(line, runtime)
+        .into_iter()
+        .map(str::trim)
+        .collect();
 
     if !runtime.config.all && !runtime.config.fields.is_empty() {
         let selected: Vec<&str> = runtime
@@ -101,7 +103,11 @@ fn render_maybe_line(line: &str, runtime: &RuntimeConfig) -> Option<String> {
     }
 }
 
-fn write_text<W: Write>(writer: &mut W, text: &str, runtime: &RuntimeConfig) -> Result<(), AppError> {
+fn write_text<W: Write>(
+    writer: &mut W,
+    text: &str,
+    runtime: &RuntimeConfig,
+) -> Result<(), AppError> {
     let mut wrote_any = false;
 
     for line in text.lines() {
@@ -157,7 +163,10 @@ mod tests {
             text: None,
         };
 
-        assert_eq!(render_line("baaabbbaaaccc", &runtime(config)), "b, bbb, ccc");
+        assert_eq!(
+            render_line("baaabbbaaaccc", &runtime(config)),
+            "b, bbb, ccc"
+        );
     }
 
     #[test]

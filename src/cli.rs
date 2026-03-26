@@ -1,8 +1,7 @@
 use crate::diagnostic::{
-    AppError, all_and_field_conflict_error, ambiguous_long_option_error,
-    empty_delimiter_error, empty_ignore_pattern_error, invalid_field_error,
-    invalid_max_split_error, missing_delimiter_error, missing_value_error,
-    unknown_option_error, zero_field_error,
+    AppError, all_and_field_conflict_error, ambiguous_long_option_error, empty_delimiter_error,
+    empty_ignore_pattern_error, invalid_field_error, invalid_max_split_error,
+    missing_delimiter_error, missing_value_error, unknown_option_error, zero_field_error,
 };
 
 pub(crate) const DETAIL: &str = include_str!("../README.md");
@@ -75,7 +74,9 @@ where
             "-h" | "--help" => return Ok(ParseResult::Help),
             "--detail" => return Ok(ParseResult::Detail),
             "-d" | "--delimiter" => {
-                let value = args.next().ok_or_else(|| missing_value_error("-d/--delimiter"))?;
+                let value = args
+                    .next()
+                    .ok_or_else(|| missing_value_error("-d/--delimiter"))?;
                 delimiters.push(value);
             }
             "-f" | "--field" => {
@@ -85,19 +86,27 @@ where
                 all = true;
             }
             "-i" | "--ignore" => {
-                let value = args.next().ok_or_else(|| missing_value_error("-i/--ignore"))?;
+                let value = args
+                    .next()
+                    .ok_or_else(|| missing_value_error("-i/--ignore"))?;
                 ignore_pattern = Some(value);
             }
             "-m" | "--max-split" => {
-                let value = args.next().ok_or_else(|| missing_value_error("-m/--max-split"))?;
+                let value = args
+                    .next()
+                    .ok_or_else(|| missing_value_error("-m/--max-split"))?;
                 max_split = Some(parse_max_split(&value)?);
             }
             "-o" | "--output" => {
-                let value = args.next().ok_or_else(|| missing_value_error("-o/--output"))?;
+                let value = args
+                    .next()
+                    .ok_or_else(|| missing_value_error("-o/--output"))?;
                 output = Some(value);
             }
             "-r" | "--replace" => {
-                let value = args.next().ok_or_else(|| missing_value_error("-r/--replace"))?;
+                let value = args
+                    .next()
+                    .ok_or_else(|| missing_value_error("-r/--replace"))?;
                 replace = Some(value);
             }
             "-x" | "--regex" => {
@@ -127,7 +136,10 @@ where
     if all && !fields.is_empty() {
         return Err(all_and_field_conflict_error());
     }
-    if ignore_pattern.as_ref().is_some_and(|pattern| pattern.is_empty()) {
+    if ignore_pattern
+        .as_ref()
+        .is_some_and(|pattern| pattern.is_empty())
+    {
         return Err(empty_ignore_pattern_error());
     }
 
@@ -186,7 +198,9 @@ fn normalize_long_option(arg: &str) -> Result<String, AppError> {
 }
 
 fn parse_field(value: &str) -> Result<isize, AppError> {
-    let field = value.parse::<isize>().map_err(|_| invalid_field_error(value))?;
+    let field = value
+        .parse::<isize>()
+        .map_err(|_| invalid_field_error(value))?;
 
     if field == 0 {
         return Err(zero_field_error());
@@ -229,8 +243,7 @@ where
 fn is_option_boundary(arg: &str) -> bool {
     matches!(
         arg,
-        "-h"
-            | "--help"
+        "-h" | "--help"
             | "-d"
             | "--delimiter"
             | "-a"
@@ -466,21 +479,14 @@ mod tests {
 
     #[test]
     fn parse_args_rejects_ambiguous_abbreviated_long_option() {
-        let result = parse_args([
-            "cutcut".to_string(),
-            "--d".to_string(),
-        ]);
+        let result = parse_args(["cutcut".to_string(), "--d".to_string()]);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn parse_args_rejects_empty_delimiter() {
-        let result = parse_args([
-            "cutcut".to_string(),
-            "-d".to_string(),
-            "".to_string(),
-        ]);
+        let result = parse_args(["cutcut".to_string(), "-d".to_string(), "".to_string()]);
 
         assert!(result.is_err());
     }
