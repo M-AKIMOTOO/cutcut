@@ -4,7 +4,6 @@ mod runtime;
 mod split;
 
 use std::env;
-use std::io::{self, IsTerminal};
 
 use crate::cli::{DETAIL, HELP, ParseResult, parse_args};
 use crate::diagnostic::{AppError, print_diagnostic};
@@ -16,14 +15,14 @@ const BANNER: &str = r"  ____ _   _ _____ ____ _   _ _____
  \____|\___/  |_| \____|\___/  |_|";
 
 fn main() {
-    maybe_print_banner();
-
     match run_main() {
         Ok(()) => {}
         Err(AppError::Help) => {
+            print_banner();
             print!("{HELP}");
         }
         Err(AppError::Detail) => {
+            print_banner();
             print!("{DETAIL}");
         }
         Err(AppError::Diagnostic(diagnostic)) => {
@@ -46,15 +45,9 @@ fn main() {
     }
 }
 
-fn maybe_print_banner() {
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-    let stderr = io::stderr();
-
-    if stdin.is_terminal() && stdout.is_terminal() && stderr.is_terminal() {
-        eprintln!("{BANNER}");
-        eprintln!();
-    }
+fn print_banner() {
+    println!("{BANNER}");
+    println!();
 }
 
 fn run_main() -> Result<(), AppError> {
