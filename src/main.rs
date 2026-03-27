@@ -3,7 +3,10 @@ mod diagnostic;
 mod runtime;
 mod split;
 
+use glow::{Config as GlowConfig, Reader as GlowReader};
 use std::env;
+use std::fs;
+use std::process;
 
 use crate::cli::{DETAIL, HELP, ParseResult, parse_args};
 use crate::diagnostic::{AppError, print_diagnostic};
@@ -23,7 +26,7 @@ fn main() {
         }
         Err(AppError::Detail) => {
             print_banner();
-            print!("{DETAIL}");
+            print_detail();
         }
         Err(AppError::Diagnostic(diagnostic)) => {
             print_diagnostic(&diagnostic);
@@ -48,6 +51,23 @@ fn main() {
 fn print_banner() {
     println!("{BANNER}");
     println!();
+}
+
+fn print_detail() {
+    match render_detail_with_glow() {
+        Ok(rendered) => print!("{rendered}"),
+        Err(_) => print!("{DETAIL}"),
+    }
+}
+
+fn render_detail_with_glow() -> std::io::Result<String> {
+    let path = env::temp_dir().join(format!("cutcut-detail-{}.md", process::id()));
+    fs::write(&path, DETAIL)?;
+
+    let reader = GlowReader::new(GlowConfig::new().pager(false).width(100));
+    let rendered = reader.read_file(&path);
+    let _ = fs::remove_file(&path);
+    rendered
 }
 
 fn run_main() -> Result<(), AppError> {
