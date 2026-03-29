@@ -36,6 +36,7 @@ impl Diagnostic {
 pub(crate) enum AppError {
     Help,
     Detail,
+    Version,
     Diagnostic(Diagnostic),
     Io(std::io::Error),
 }

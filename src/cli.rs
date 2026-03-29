@@ -10,6 +10,7 @@ pub(crate) const HELP: &str = "\
 cutcut - split text by an arbitrary delimiter string
 
 Usage:
+  cutcut --version
   cutcut --detail
   cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex] [TEXT...]
   cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex]
@@ -26,6 +27,7 @@ Options:
   --count          Print the number of fields after splitting
   -x, --regex      Interpret -d and -i patterns as regular expressions
   --detail         Show the embedded README with detailed usage and examples
+  -V, --version    Show the cutcut version
   -h, --help       Show this help
 ";
 
@@ -49,6 +51,7 @@ pub(crate) enum ParseResult {
     Config(Config),
     Help,
     Detail,
+    Version,
 }
 
 pub(crate) fn parse_args<I>(args: I) -> Result<ParseResult, AppError>
@@ -80,6 +83,7 @@ where
         match resolved.as_str() {
             "-h" | "--help" => return Ok(ParseResult::Help),
             "--detail" => return Ok(ParseResult::Detail),
+            "-V" | "--version" => return Ok(ParseResult::Version),
             "-d" | "--delimiter" => {
                 let value = args
                     .next()
@@ -191,6 +195,7 @@ fn normalize_long_option(arg: &str) -> Result<String, AppError> {
     const LONG_OPTIONS: &[&str] = &[
         "--help",
         "--detail",
+        "--version",
         "--delimiter",
         "--all",
         "--component",
@@ -267,6 +272,8 @@ fn is_option_boundary(arg: &str) -> bool {
     matches!(
         arg,
         "-h" | "--help"
+            | "-V"
+            | "--version"
             | "-d"
             | "--delimiter"
             | "-a"
@@ -603,5 +610,12 @@ mod tests {
                 text: Some("aa/bb/cc".to_string()),
             })
         );
+    }
+
+    #[test]
+    fn parse_args_supports_version_flag() {
+        let result = parse_args(["cutcut".to_string(), "--version".to_string()]).unwrap();
+
+        assert_eq!(result, ParseResult::Version);
     }
 }

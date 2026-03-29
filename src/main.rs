@@ -10,6 +10,7 @@ use crate::cli::{DETAIL, HELP, ParseResult, parse_args};
 use crate::detail::render_detail;
 use crate::diagnostic::{AppError, print_diagnostic};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 const BANNER: &str = r"  ____ _   _ _____ ____ _   _ _____
  / ___| | | |_   _/ ___| | | |_   _|
 | |   | | | | | || |   | | | | | |
@@ -26,6 +27,9 @@ fn main() {
         Err(AppError::Detail) => {
             print_banner();
             print_detail();
+        }
+        Err(AppError::Version) => {
+            println!("cutcut {VERSION}");
         }
         Err(AppError::Diagnostic(diagnostic)) => {
             print_diagnostic(&diagnostic);
@@ -61,5 +65,6 @@ fn run_main() -> Result<(), AppError> {
         ParseResult::Config(config) => runtime::run(config),
         ParseResult::Help => Err(AppError::Help),
         ParseResult::Detail => Err(AppError::Detail),
+        ParseResult::Version => Err(AppError::Version),
     }
 }
