@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::fs::File;
-use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
+use std::io::{self, BufRead, BufWriter, IsTerminal, Read, Write};
 
 use crate::cli::Config;
 use crate::diagnostic::{AppError, invalid_ignore_regex_error};
@@ -18,6 +18,10 @@ pub(crate) fn run(config: Config) -> Result<(), AppError> {
     let mut writer = make_writer(&runtime)?;
 
     if let Some(text) = &runtime.config.text {
+        if !runtime.config.components.is_empty() {
+            write_components(&mut writer, text, &runtime)?;
+            return Ok(());
+        }
         write_text(&mut writer, text, &runtime)?;
         return Ok(());
     }
@@ -25,6 +29,13 @@ pub(crate) fn run(config: Config) -> Result<(), AppError> {
     let stdin = io::stdin();
     if stdin.is_terminal() {
         return Err(AppError::Help);
+    }
+
+    if !runtime.config.components.is_empty() {
+        let mut data = String::new();
+        stdin.lock().read_to_string(&mut data)?;
+        write_components(&mut writer, &data, &runtime)?;
+        return Ok(());
     }
 
     for line in stdin.lock().lines() {
@@ -67,7 +78,9 @@ pub(crate) fn render_line(line: &str, runtime: &RuntimeConfig) -> String {
         .map(str::trim)
         .collect();
 
-    if !runtime.config.all && !runtime.config.fields.is_empty() {
+    if runtime.config.count {
+        fields.len().to_string()
+    } else if !runtime.config.all && !runtime.config.fields.is_empty() {
         let selected: Vec<&str> = runtime
             .config
             .fields
@@ -78,6 +91,21 @@ pub(crate) fn render_line(line: &str, runtime: &RuntimeConfig) -> String {
     } else {
         fields.join(runtime.config.replace.as_deref().unwrap_or(", "))
     }
+}
+
+fn render_components(text: &str, runtime: &RuntimeConfig) -> Vec<String> {
+    let filtered = filter_ignored_lines(text, runtime);
+    let fields: Vec<&str> = split_fields(&filtered, runtime)
+        .into_iter()
+        .map(str::trim)
+        .collect();
+
+    runtime
+        .config
+        .components
+        .iter()
+        .map(|&index| select_field(&fields, index).unwrap_or("").to_string())
+        .collect()
 }
 
 pub(crate) fn should_ignore_line(line: &str, runtime: &RuntimeConfig) -> bool {
@@ -126,6 +154,24 @@ fn write_text<W: Write>(
     Ok(())
 }
 
+fn write_components<W: Write>(
+    writer: &mut W,
+    text: &str,
+    runtime: &RuntimeConfig,
+) -> Result<(), AppError> {
+    for component in render_components(text, runtime) {
+        writeln!(writer, "{component}")?;
+    }
+    Ok(())
+}
+
+fn filter_ignored_lines(text: &str, runtime: &RuntimeConfig) -> String {
+    text.lines()
+        .filter(|line| !should_ignore_line(line, runtime))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn make_writer(runtime: &RuntimeConfig) -> Result<Box<dyn Write>, AppError> {
     if let Some(path) = &runtime.config.output {
         let file = File::create(path)?;
@@ -143,7 +189,9 @@ fn build_ignore_regex(pattern: &str) -> Result<Regex, AppError> {
 #[cfg(test)]
 mod tests {
     use crate::cli::Config;
-    use crate::runtime::{build_runtime_config, render_line, should_ignore_line};
+    use crate::runtime::{
+        build_runtime_config, render_components, render_line, should_ignore_line,
+    };
 
     fn runtime(config: Config) -> crate::runtime::RuntimeConfig {
         build_runtime_config(config).expect("test config should be valid")
@@ -154,6 +202,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["aaa".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -174,6 +224,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["aaa".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![2],
             ignore_pattern: None,
             max_split: None,
@@ -191,6 +243,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["aaa".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![4],
             ignore_pattern: None,
             max_split: None,
@@ -208,6 +262,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["aa".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![2],
             ignore_pattern: None,
             max_split: None,
@@ -230,6 +286,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["/".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -247,6 +305,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["/".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![-1],
             ignore_pattern: None,
             max_split: None,
@@ -264,6 +324,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["/".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![1, 3, -1],
             ignore_pattern: None,
             max_split: None,
@@ -281,6 +343,8 @@ mod tests {
         let config = Config {
             delimiters: vec![",".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -298,6 +362,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["/".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: Some("#".to_string()),
             max_split: None,
@@ -315,6 +381,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["/".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: Some("^#".to_string()),
             max_split: None,
@@ -325,5 +393,44 @@ mod tests {
         };
 
         assert!(should_ignore_line("# comment", &runtime(config)));
+    }
+
+    #[test]
+    fn count_mode_prints_number_of_fields() {
+        let config = Config {
+            delimiters: vec!["/".to_string()],
+            all: false,
+            components: Vec::new(),
+            count: true,
+            fields: Vec::new(),
+            ignore_pattern: None,
+            max_split: None,
+            output: None,
+            replace: None,
+            regex: false,
+            text: None,
+        };
+
+        assert_eq!(render_line("aa/bb/cc", &runtime(config)), "3");
+    }
+
+    #[test]
+    fn component_mode_selects_from_full_split_stream() {
+        let config = Config {
+            delimiters: vec!["space".to_string()],
+            all: false,
+            components: vec![1, 4, 10],
+            count: false,
+            fields: Vec::new(),
+            ignore_pattern: None,
+            max_split: None,
+            output: None,
+            replace: None,
+            regex: false,
+            text: None,
+        };
+
+        let rendered = render_components("a b c d e f g h i j", &runtime(config));
+        assert_eq!(rendered, vec!["a", "d", "j"]);
     }
 }

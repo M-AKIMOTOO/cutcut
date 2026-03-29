@@ -145,6 +145,28 @@ pub(crate) fn all_and_field_conflict_error() -> AppError {
     )
 }
 
+pub(crate) fn count_conflict_error() -> AppError {
+    diagnostic_error(
+        Diagnostic::new("--count cannot be used with -a/--all, -f/--field, -c/--component, or -r/--replace")
+            .detail("--count prints only the number of split fields, so field selection and rejoining do not apply.")
+            .suggestion("Use --count by itself to print the field count")
+            .suggestion("Remove --count if you want actual field values")
+            .example("cutcut -d '/' --count aa/bb/cc")
+            .example("printf 'aa/bb/cc\\nxx/yy\\n' | cutcut -d '/' --count"),
+    )
+}
+
+pub(crate) fn component_conflict_error() -> AppError {
+    diagnostic_error(
+        Diagnostic::new("-c/--component cannot be used with -a/--all, -f/--field, --count, or -r/--replace")
+            .detail("-c selects positions from the full split stream, so line-wise field selection and rejoining do not apply.")
+            .suggestion("Use -c by itself to select stream-wide component positions")
+            .suggestion("Use -f if you want per-line field selection")
+            .example("printf 'a b c d\\n' | cutcut -d 'space' -c 1 4")
+            .example("printf 'a b\\nc d\\n' | cutcut -d 'space' -f 1"),
+    )
+}
+
 pub(crate) fn empty_ignore_pattern_error() -> AppError {
     diagnostic_error(
         Diagnostic::new("ignore pattern must not be an empty string")

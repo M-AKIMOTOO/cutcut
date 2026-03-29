@@ -226,6 +226,8 @@ mod tests {
         let config = Config {
             delimiters: vec![" ".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -243,6 +245,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["space".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: vec![2],
             ignore_pattern: None,
             max_split: None,
@@ -260,6 +264,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["space".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -277,6 +283,8 @@ mod tests {
         let config = Config {
             delimiters: vec![",".to_string(), ".".to_string(), "|".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -297,6 +305,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["aa".to_string(), "aaaa".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -314,6 +324,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["#+".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -334,6 +346,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["[[:space:]]+".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -351,6 +365,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["(".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: None,
@@ -368,6 +384,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["=".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: Some(1),
@@ -385,6 +403,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["=+".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: Some(2),
@@ -405,6 +425,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["=".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: Some(-1),
@@ -422,6 +444,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["=+".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: Some(-2),
@@ -439,6 +463,8 @@ mod tests {
         let config = Config {
             delimiters: vec!["space".to_string()],
             all: false,
+            components: Vec::new(),
+            count: false,
             fields: Vec::new(),
             ignore_pattern: None,
             max_split: Some(-1),

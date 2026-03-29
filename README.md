@@ -8,8 +8,8 @@ Unlike the standard `cut`, the delimiter can be a multi-character string such as
 
 ```bash
 cutcut --detail
-cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex] [TEXT...]
-cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex]
+cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex] [TEXT...]
+cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex]
 ```
 
 ## Options
@@ -20,6 +20,8 @@ cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]
   Explicitly print all fields. This is the default when `-f` is omitted.
 - `-f`, `--field`
   Print one or more fields. Positive numbers count from the front. Negative numbers count from the back.
+- `-c`, `--component`
+  Print one or more positions from the full split stream, not line by line.
 - `-r`, `--replace`
   Rejoin fields with this string instead of `, `. Useful for replacement.
 - `-i`, `--ignore`
@@ -30,6 +32,8 @@ cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]
   Write output to `FILE` instead of stdout.
 - `-x`, `--regex`
   Interpret `-d` and `-i` patterns as regular expressions.
+- `--count`
+  Print the number of fields after splitting.
 - `--detail`
   Show this README content directly from the executable.
 - `-h`, `--help`
@@ -50,6 +54,29 @@ cutcut --detail
 Most examples below show both the command and the resulting output.
 
 ## Basic examples
+
+Count fields after splitting:
+
+```bash
+cutcut -d "/" --count aa/bb/cc
+```
+
+Output:
+
+```text
+3
+```
+
+```bash
+printf 'aa/bb/cc\nxx/yy\n' | cutcut -d "/" --count
+```
+
+Output:
+
+```text
+3
+2
+```
 
 Split by a multi-character delimiter:
 
@@ -86,6 +113,22 @@ Output:
 ```text
 aa, cc, cc
 ```
+
+`-c` selects components from the full split stream:
+
+```bash
+cutcut -d "space" -c 1 2 3 "Station[L] : name=YAMAGU34"
+```
+
+Output:
+
+```text
+Station[L]
+:
+name=YAMAGU34
+```
+
+Use `-f` if you want per-line field selection instead.
 
 If the requested field does not exist, the output is an empty line.
 

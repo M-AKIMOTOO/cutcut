@@ -1,7 +1,8 @@
 use crate::diagnostic::{
-    AppError, all_and_field_conflict_error, ambiguous_long_option_error, empty_delimiter_error,
-    empty_ignore_pattern_error, invalid_field_error, invalid_max_split_error,
-    missing_delimiter_error, missing_value_error, unknown_option_error, zero_field_error,
+    AppError, all_and_field_conflict_error, ambiguous_long_option_error, component_conflict_error,
+    count_conflict_error, empty_delimiter_error, empty_ignore_pattern_error, invalid_field_error,
+    invalid_max_split_error, missing_delimiter_error, missing_value_error, unknown_option_error,
+    zero_field_error,
 };
 
 pub(crate) const DETAIL: &str = include_str!("../README.md");
@@ -10,17 +11,19 @@ cutcut - split text by an arbitrary delimiter string
 
 Usage:
   cutcut --detail
-  cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex] [TEXT...]
-  cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...]] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex]
+  cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex] [TEXT...]
+  cat file.txt | cutcut -d DELIMITER [-d DELIMITER ...] [-a | -f FIELD [FIELD ...] | -c FIELD [FIELD ...] | --count] [-r REPLACEMENT] [-i PATTERN] [-m COUNT] [-o FILE] [-x|--regex]
 
 Options:
   -d, --delimiter  Delimiter string to split on; repeatable; use \" \" or \"space\" for whitespace
   -a, --all        Explicitly print all fields
   -f, --field      One or more field indices; positive counts from start, negative from end
+  -c, --component  One or more positions from the full split stream, not line by line
   -i, --ignore     Ignore input lines containing PATTERN; with --regex, ignore matching lines
   -m, --max-split  Split at most COUNT times; negative counts from the end
   -o, --output     Write output to FILE instead of stdout
   -r, --replace    Rejoin fields with REPLACEMENT instead of \", \"
+  --count          Print the number of fields after splitting
   -x, --regex      Interpret -d and -i patterns as regular expressions
   --detail         Show the embedded README with detailed usage and examples
   -h, --help       Show this help
@@ -30,6 +33,8 @@ Options:
 pub(crate) struct Config {
     pub(crate) delimiters: Vec<String>,
     pub(crate) all: bool,
+    pub(crate) components: Vec<isize>,
+    pub(crate) count: bool,
     pub(crate) fields: Vec<isize>,
     pub(crate) ignore_pattern: Option<String>,
     pub(crate) max_split: Option<isize>,
@@ -59,6 +64,8 @@ where
 
     let mut delimiters = Vec::new();
     let mut all = false;
+    let mut components = Vec::new();
+    let mut count = false;
     let mut fields = Vec::new();
     let mut ignore_pattern = None;
     let mut max_split = None;
@@ -82,8 +89,14 @@ where
             "-f" | "--field" => {
                 fields.extend(parse_field_values(&mut args)?);
             }
+            "-c" | "--component" => {
+                components.extend(parse_field_values(&mut args)?);
+            }
             "-a" | "--all" => {
                 all = true;
+            }
+            "--count" => {
+                count = true;
             }
             "-i" | "--ignore" => {
                 let value = args
@@ -136,6 +149,12 @@ where
     if all && !fields.is_empty() {
         return Err(all_and_field_conflict_error());
     }
+    if count && (all || !fields.is_empty() || !components.is_empty() || replace.is_some()) {
+        return Err(count_conflict_error());
+    }
+    if !components.is_empty() && (all || !fields.is_empty() || count || replace.is_some()) {
+        return Err(component_conflict_error());
+    }
     if ignore_pattern
         .as_ref()
         .is_some_and(|pattern| pattern.is_empty())
@@ -152,6 +171,8 @@ where
     Ok(ParseResult::Config(Config {
         delimiters,
         all,
+        components,
+        count,
         fields,
         ignore_pattern,
         max_split,
@@ -172,7 +193,9 @@ fn normalize_long_option(arg: &str) -> Result<String, AppError> {
         "--detail",
         "--delimiter",
         "--all",
+        "--component",
         "--field",
+        "--count",
         "--ignore",
         "--max-split",
         "--output",
@@ -248,8 +271,11 @@ fn is_option_boundary(arg: &str) -> bool {
             | "--delimiter"
             | "-a"
             | "--all"
+            | "-c"
+            | "--component"
             | "-f"
             | "--field"
+            | "--count"
             | "-i"
             | "--ignore"
             | "-m"
@@ -292,6 +318,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["aa".to_string(), "bb".to_string()],
                 all: true,
+                components: Vec::new(),
+                count: false,
                 fields: Vec::new(),
                 ignore_pattern: Some("#".to_string()),
                 max_split: None,
@@ -319,6 +347,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["/".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: vec![-1],
                 ignore_pattern: None,
                 max_split: None,
@@ -350,6 +380,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["/".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: vec![1, 3, -1],
                 ignore_pattern: None,
                 max_split: None,
@@ -378,6 +410,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["#+".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: Vec::new(),
                 ignore_pattern: Some("^#".to_string()),
                 max_split: None,
@@ -408,6 +442,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["=".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: Vec::new(),
                 ignore_pattern: None,
                 max_split: Some(1),
@@ -436,6 +472,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["=".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: Vec::new(),
                 ignore_pattern: None,
                 max_split: Some(-1),
@@ -466,6 +504,8 @@ mod tests {
             ParseResult::Config(Config {
                 delimiters: vec!["/".to_string()],
                 all: false,
+                components: Vec::new(),
+                count: false,
                 fields: vec![2],
                 ignore_pattern: Some("#".to_string()),
                 max_split: None,
@@ -503,5 +543,65 @@ mod tests {
         ]);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_args_supports_count_flag() {
+        let result = parse_args([
+            "cutcut".to_string(),
+            "-d".to_string(),
+            "/".to_string(),
+            "--count".to_string(),
+            "aa/bb/cc".to_string(),
+        ])
+        .unwrap();
+
+        assert_eq!(
+            result,
+            ParseResult::Config(Config {
+                delimiters: vec!["/".to_string()],
+                all: false,
+                components: Vec::new(),
+                count: true,
+                fields: Vec::new(),
+                ignore_pattern: None,
+                max_split: None,
+                output: None,
+                replace: None,
+                regex: false,
+                text: Some("aa/bb/cc".to_string()),
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_component_flag() {
+        let result = parse_args([
+            "cutcut".to_string(),
+            "-d".to_string(),
+            "/".to_string(),
+            "-c".to_string(),
+            "1".to_string(),
+            "3".to_string(),
+            "aa/bb/cc".to_string(),
+        ])
+        .unwrap();
+
+        assert_eq!(
+            result,
+            ParseResult::Config(Config {
+                delimiters: vec!["/".to_string()],
+                all: false,
+                components: vec![1, 3],
+                count: false,
+                fields: Vec::new(),
+                ignore_pattern: None,
+                max_split: None,
+                output: None,
+                replace: None,
+                regex: false,
+                text: Some("aa/bb/cc".to_string()),
+            })
+        );
     }
 }
